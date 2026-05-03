@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Bell, Lock, Moon, LogOut, ChevronRight, Globe, ShieldCheck, Heart, Info, XCircle, Instagram, Check, Monitor, Sun, Trash2, Link2Off } from 'lucide-react';
+import { User, Bell, Lock, Moon, LogOut, ChevronRight, Globe, ShieldCheck, Heart, Info, XCircle, Instagram, Check, Monitor, Sun, Trash2, Link2Off, Mail } from 'lucide-react';
 import { logout, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
@@ -259,10 +259,14 @@ const Settings = () => {
                   <h4 className="font-black text-rose-500 uppercase tracking-widest text-[10px]">The Founder</h4>
                   <p className="text-gray-800 font-bold text-lg">Aielot Pangyak</p>
                   <p className="opacity-70 italic text-xs">"Creating digital solutions that bring hearts closer."</p>
-                  <div className="pt-4 flex gap-4">
+                  <div className="pt-4 flex flex-col gap-4">
                     <a href="https://www.instagram.com/aielot.mp4" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-rose-400 font-bold">
                       <Instagram size={18} />
                       <span className="text-xs uppercase tracking-widest">Connect on Instagram</span>
+                    </a>
+                    <a href="mailto:aielotpangyak@gmail.com" className="flex items-center gap-2 text-rose-400 font-bold">
+                      <Mail size={18} />
+                      <span className="text-xs uppercase tracking-widest lowercase">aielotpangyak@gmail.com</span>
                     </a>
                   </div>
                 </div>

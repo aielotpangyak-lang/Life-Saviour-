@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import { signInWithGoogle } from '../lib/firebase';
+import { Logo } from '../components/Logo';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,11 +25,11 @@ const Login = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
-          <div className="w-24 h-24 bg-white rounded-[32px] flex items-center justify-center shadow-xl shadow-rose-100 mx-auto mb-10 border border-rose-50">
-            <span className="text-rose-400 text-3xl font-bold">LS</span>
+          <div className="flex justify-center mb-10">
+            <Logo size={96} showText={false} />
           </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-3">Welcome</h1>
-          <p className="text-rose-400 font-bold tracking-[0.2em] text-[10px] uppercase mb-1">Life Saviour</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">LunarSync</h1>
+          <p className="text-rose-400 font-bold tracking-[0.2em] text-[10px] uppercase mb-4">Harmony in Connection</p>
           <p className="text-gray-400 font-medium italic">Your intelligent cycle companion</p>
         </motion.div>
 

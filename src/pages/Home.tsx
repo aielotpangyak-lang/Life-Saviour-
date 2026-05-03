@@ -7,7 +7,7 @@ import { format, differenceInDays, addDays } from 'date-fns';
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import FeatureTour from '../components/FeatureTour';
-
+import { Logo } from '../components/Logo';
 import { useTranslation } from '../lib/LanguageContext';
 
 const Home = () => {
@@ -266,12 +266,9 @@ const Home = () => {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">{t('greeting')}, {profile?.displayName?.split(' ')?.[0] || 'User'}</h1>
-          <p className="text-rose-400 font-medium">Today is {format(new Date(), 'EEEE, MMMM do')}</p>
-        </div>
-        <div className="w-12 h-12 rounded-2xl bg-white shadow-md border-2 border-white overflow-hidden">
+      <header className="flex justify-between items-center">
+        <Logo size={40} showText={true} />
+        <div className="w-12 h-12 rounded-2xl bg-white shadow-lg overflow-hidden border border-rose-50">
           <img src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} alt="avatar" />
         </div>
       </header>
