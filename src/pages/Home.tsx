@@ -91,14 +91,21 @@ const Home = () => {
   const handleLogPeriod = async () => {
     if (!user) return;
     try {
-      const updates = {
+      const targetUserId = isFemale ? user.uid : profile?.partnerId;
+      if (!targetUserId) {
+        if (!isFemale) alert("Please link with your partner first to track their cycle.");
+        return;
+      }
+
+      const updatesByPath = {
         'cycleSettings.lastPeriodDate': selectedPeriodDate,
         'cycleSettings.isPeriodActive': true,
         'cycleSettings.periodStartDate': selectedPeriodDate,
         'cycleSettings.isUncertain': false,
         'cycleSettings.updatedAt': serverTimestamp()
       };
-      await updateDoc(doc(db, 'users', user.uid), updates);
+
+      await updateDoc(doc(db, 'users', targetUserId), updatesByPath);
       
       if (profile?.relationshipId) {
         await updateDoc(doc(db, 'relationships', profile.relationshipId), {
@@ -118,10 +125,12 @@ const Home = () => {
   const handleStopPeriod = async () => {
     if (!user) return;
     try {
+      const targetUserId = isFemale ? user.uid : profile?.partnerId;
+      if (!targetUserId) return;
+
       const startDate = displaySettings.periodStartDate;
       const endDate = selectedEndDate;
       
-      // Calculate duration
       const start = new Date(startDate);
       const end = new Date(endDate);
       const duration = differenceInDays(end, start) + 1;
@@ -129,8 +138,7 @@ const Home = () => {
       const newPeriod = { startDate, endDate, duration, status: 'completed' };
       const updatedPeriods = [newPeriod, ...(displaySettings.periods || [])].slice(0, 50);
 
-      // Add to history
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(doc(db, 'users', targetUserId), {
         'cycleSettings.isPeriodActive': false,
         'cycleSettings.lastPeriodDate': endDate,
         'cycleSettings.periods': updatedPeriods,
@@ -322,7 +330,7 @@ const Home = () => {
             )}
 
             {displaySettings.isPeriodActive ? (
-              <div className="space-y-6">
+              <div className="space-y-6 w-full">
                 <p className="text-gray-500 text-sm font-medium uppercase tracking-[0.2em]">{t('period_in_progress')}</p>
                 <div className="grid grid-cols-4 gap-2">
                   <div className="text-center">
@@ -350,29 +358,28 @@ const Home = () => {
                   </p>
                 </div>
 
-                {isFemale && (
-                  <button
-                    onClick={() => setIsStoppingPeriod(true)}
-                    className="mt-4 w-full py-4 bg-rose-400 text-white font-bold rounded-2xl shadow-lg shadow-rose-100 flex items-center justify-center gap-2 active:scale-95 transition-all text-xs uppercase tracking-widest"
-                  >
-                    <Check size={16} strokeWidth={3} />
-                    {t('stop_period')}
-                  </button>
-                )}
+                <button
+                  onClick={() => setIsStoppingPeriod(true)}
+                  className="mt-4 w-full py-5 bg-rose-400 text-white font-black rounded-3xl shadow-xl shadow-rose-200 flex items-center justify-center gap-2 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                >
+                  <Check size={20} strokeWidth={3} />
+                  {t('stop_period')}
+                </button>
               </div>
             ) : (
-              <div className="space-y-1">
-                <p className="text-gray-500 text-sm font-medium">{daysUntilNext <= 0 ? t('overdue') : t('free')}</p>
-                <p className="text-xl font-medium text-gray-400 italic">{t('rhythm_synced')}</p>
-                {isFemale && (
-                  <button
-                    onClick={() => setIsLoggingPeriod(true)}
-                    className="mt-6 w-full py-4 bg-rose-50 text-rose-500 font-bold rounded-2xl border border-rose-100 flex items-center justify-center gap-2 active:scale-95 transition-all text-xs uppercase tracking-widest"
-                  >
-                    <Calendar size={14} />
-                    {t('log_period')}
-                  </button>
-                )}
+              <div className="space-y-4 w-full">
+                <div className="space-y-1">
+                  <p className="text-gray-500 text-sm font-medium">{daysUntilNext <= 0 ? t('overdue') : t('free')}</p>
+                  <p className="text-xl font-medium text-gray-400 italic">{t('rhythm_synced')}</p>
+                </div>
+                
+                <button
+                  onClick={() => setIsLoggingPeriod(true)}
+                  className="mt-6 w-full py-5 bg-rose-400 text-white font-black rounded-3xl shadow-xl shadow-rose-200 flex items-center justify-center gap-3 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                >
+                  <Calendar size={20} />
+                  {t('log_period')}
+                </button>
               </div>
             )}
           </div>

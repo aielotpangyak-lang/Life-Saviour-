@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Clock,
   PieChart,
-  Download
+  Download,
+  Plus
 } from 'lucide-react';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -74,6 +75,44 @@ const Histories = () => {
     return Math.round(sum / gaps.length);
   }, [periods, displaySettings.avgCycleDays]);
 
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualStart, setManualStart] = useState('');
+  const [manualEnd, setManualEnd] = useState('');
+
+  const handleManualAdd = async () => {
+    if (!user || !manualStart || !manualEnd || !isFemale) return;
+    
+    const start = new Date(manualStart);
+    const end = new Date(manualEnd);
+    if (end < start) {
+      alert("End date cannot be before start date");
+      return;
+    }
+
+    const duration = differenceInDays(end, start) + 1;
+    const newPeriod = { startDate: manualStart, endDate: manualEnd, duration, status: 'completed' };
+    
+    // Check for duplicates
+    if (periods.some((p: any) => p.startDate === manualStart)) {
+      alert("A period record already exists for this date.");
+      return;
+    }
+
+    const updatedPeriods = [newPeriod, ...periods].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()).slice(0, 50);
+
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        'cycleSettings.periods': updatedPeriods,
+        'cycleSettings.updatedAt': serverTimestamp()
+      });
+      setShowManualEntry(false);
+      setManualStart('');
+      setManualEnd('');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'users/' + user.uid);
+    }
+  };
+
   const handleDelete = async () => {
     if (!user || !selectedPeriod || !isFemale) return;
     
@@ -108,6 +147,60 @@ const Histories = () => {
         cancelText="Cancel"
       />
 
+      <AnimatePresence>
+        {showManualEntry && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl space-y-6"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-black text-gray-800 uppercase tracking-widest">Add Record</h3>
+                <button 
+                  onClick={() => setShowManualEntry(false)}
+                  className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"
+                >
+                  <Calendar className="opacity-40" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Start Date</label>
+                  <input 
+                    type="date"
+                    value={manualStart}
+                    max={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setManualStart(e.target.value)}
+                    className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold text-gray-800"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">End Date</label>
+                  <input 
+                    type="date"
+                    value={manualEnd}
+                    min={manualStart}
+                    max={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setManualEnd(e.target.value)}
+                    className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold text-gray-800"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleManualAdd}
+                className="w-full py-5 bg-rose-400 text-white font-black rounded-3xl shadow-xl shadow-rose-200"
+              >
+                Add to History
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <header className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="p-3 bg-white text-gray-400 rounded-2xl shadow-sm border border-rose-50">
@@ -118,13 +211,24 @@ const Histories = () => {
             <p className="text-[10px] text-rose-400 font-bold uppercase tracking-widest">Cycle Record Log</p>
           </div>
         </div>
-        <button 
-          onClick={downloadHistory}
-          className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400 hover:bg-rose-100 transition-all"
-          title={t('download_json')}
-        >
-          <Download size={24} />
-        </button>
+        <div className="flex gap-2">
+          {isFemale && (
+            <button 
+              onClick={() => setShowManualEntry(true)}
+              className="w-12 h-12 bg-white border border-rose-100 rounded-2xl flex items-center justify-center text-rose-400 shadow-sm"
+              title="Add past period"
+            >
+              <Plus size={24} />
+            </button>
+          )}
+          <button 
+            onClick={downloadHistory}
+            className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400 hover:bg-rose-100 transition-all"
+            title={t('download_json')}
+          >
+            <Download size={24} />
+          </button>
+        </div>
       </header>
 
       {/* Stats Summary */}
