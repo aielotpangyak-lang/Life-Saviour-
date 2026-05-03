@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isPartner(userId) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(userId)).data.partnerId == request.auth.uid || (
+          get(/databases/$(database)/documents/users/$(userId)).data.get('relationshipId', null) != null && 
+          get(/databases/$(database)/documents/relationships/$(get(/databases/$(database)/documents/users/$(userId)).data.relationshipId)).data.partners.hasAny([request.auth.uid])
+        )
+      );
+    }
+
+    function canAccessRelationship(relId) {
+      return isSignedIn() && get(/databases/$(database)/documents/relationships/$(relId)).data.partners.hasAny([request.auth.uid]);
+    }
+
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.email is string &&
+             (data.get('displayName', '') is string) &&
+             (data.get('photoURL', '') is string) &&
+             (data.get('dob', '') is string) &&
+             (data.get('country', '') is string) &&
+             (data.get('gender', 'female') in ['female', 'male', 'other', 'prefer_not_to_say']) &&
+             (data.get('age', 0) is number);
+    }
+
+    function isValidDailyLog(data) {
+      return data.userId is string &&
+             (data.get('relationshipId', null) == null || data.relationshipId is string) &&
+             (data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')) &&
+             (data.mood is string && data.mood.size() <= 64) &&
+             (data.symptoms is list) &&
+             (data.flow in ['none', 'light', 'medium', 'heavy']) &&
+             (data.notes is string && data.notes.size() <= 5000);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isPartner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.uid == userId;
+      allow update: if isOwner(userId) || isPartner(userId);
+    }
+
+    match /relationships/{relId} {
+      allow read: if canAccessRelationship(relId);
+      allow create: if isSignedIn();
+      allow update: if canAccessRelationship(relId);
+      allow delete: if canAccessRelationship(relId);
+    }
+
+    match /dailyLogs/{logId} {
+      allow read: if isSignedIn() && (
+        resource == null || 
+        isOwner(resource.data.userId) || 
+        isPartner(resource.data.userId) || 
+        (resource.data.relationshipId != null && canAccessRelationship(resource.data.relationshipId))
+      );
+      allow create: if isSignedIn() && 
+        isValidDailyLog(request.resource.data) && (
+          isOwner(request.resource.data.userId) || 
+          (request.resource.data.relationshipId != null && canAccessRelationship(request.resource.data.relationshipId))
+        );
+      allow update: if isSignedIn() && 
+        isValidDailyLog(request.resource.data) && (
+          isOwner(resource.data.userId) || 
+          (resource.data.relationshipId != null && canAccessRelationship(resource.data.relationshipId))
+        );
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    match /cycles/{cycleId} {
+      allow read: if isSignedIn() && (resource == null || isOwner(resource.data.userId) || isPartner(resource.data.userId));
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update: if isSignedIn() && isOwner(resource.data.userId);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    match /invites/{inviteId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isOwner(request.resource.data.senderId);
+      allow update: if isSignedIn() && (request.resource.data.status == 'accepted' && resource.data.expiresAt > request.time);
+      allow delete: if isSignedIn() && isOwner(resource.data.senderId);
+    }
+  }
+}

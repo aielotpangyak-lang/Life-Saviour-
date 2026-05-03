@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and cycle settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "dob": { "type": "string", "format": "date" },
+        "country": { "type": "string" },
+        "gender": { "type": "string", "enum": ["female", "male", "other", "prefer_not_to_say"] },
+        "age": { "type": "number" },
+        "isOnboarded": { "type": "boolean" },
+        "cycleSettings": {
+          "type": "object",
+          "properties": {
+            "avgCycleDays": { "type": "number" },
+            "avgPeriodDays": { "type": "number" },
+            "lastPeriodDate": { "type": "string", "format": "date" },
+            "isUncertain": { "type": "boolean" },
+            "possibleDates": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "partnerId": { "type": "string" },
+        "relationshipId": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "partner"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "DailyLog": {
+      "title": "Daily Log",
+      "description": "User daily tracking of symptoms and moods",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "relationshipId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "symptoms": { "type": "array", "items": { "type": "string" } },
+        "mood": { "type": "string" },
+        "flow": { "type": "string", "enum": ["none", "light", "medium", "heavy"] },
+        "notes": { "type": "string" },
+        "pills": { "type": "boolean" },
+        "water": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date"]
+    },
+    "Relationship": {
+      "title": "Relationship",
+      "description": "A bond between two users",
+      "type": "object",
+      "properties": {
+        "partners": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["active", "ended"] },
+        "sharedCycleSettings": {
+          "type": "object",
+          "properties": {
+            "avgCycleDays": { "type": "number" },
+            "avgPeriodDays": { "type": "number" },
+            "lastPeriodDate": { "type": "string", "format": "date" },
+            "isUncertain": { "type": "boolean" },
+            "possibleDates": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "lastSupportAt": { "type": "string", "format": "date-time" },
+        "lastSupportFrom": { "type": "string" },
+        "lastSupportType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PartnerInvite": {
+      "title": "Partner Invite",
+      "description": "Information for linking accounts",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "expired"] },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "senderId", "expiresAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/dailyLogs/{logId}": {
+      "schema": "DailyLog",
+      "description": "Daily symptoms and mood logs"
+    },
+    "/cycles/{cycleId}": {
+      "schema": "Cycle",
+      "description": "Historical cycle data"
+    },
+    "/invites/{inviteId}": {
+      "schema": "PartnerInvite",
+      "description": "Partner connection invites"
+    },
+    "/relationships/{relationshipId}": {
+      "schema": "Relationship",
+      "description": "Shared relationship data"
+    }
+  }
+}

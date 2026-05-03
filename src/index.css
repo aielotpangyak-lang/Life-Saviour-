@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+
+  --color-brand-bg: #FFF9F9;
+  --color-brand-pink: #fecdd3;
+  --color-brand-lavender: #e9d5ff;
+  --color-brand-rose: #fb7185;
+  --color-brand-rose-light: #fff1f2;
+  --color-brand-rose-muted: #fda4af;
+  
+  --shadow-rose: 0 20px 25px -5px rgba(251, 113, 133, 0.1), 0 8px 10px -6px rgba(251, 113, 133, 0.1);
+  --shadow-soft: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-slate-700 font-sans antialiased selection:bg-brand-rose/20;
+  }
+}
+
+.glass-card {
+  @apply bg-white rounded-[32px] p-8 shadow-xl shadow-brand-rose/10 border border-brand-rose-light transition-all duration-300;
+}
+
+.pastel-gradient {
+  @apply bg-[#FFF9F9];
+}
+
+.nav-active-item {
+  @apply bg-brand-rose-light text-brand-rose shadow-sm;
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
