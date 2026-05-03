@@ -38,7 +38,18 @@
   @apply bg-brand-rose-light text-brand-rose shadow-sm;
 }
 
-/* Hide scrollbar */
+@keyframes dash {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-dash {
+  animation: dash 60s linear infinite;
+}
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

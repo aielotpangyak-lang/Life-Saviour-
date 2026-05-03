@@ -201,13 +201,14 @@ const Home = () => {
     }
   }, [profile?.relationshipId, profile?.partnerId]);
 
-  const sendSupport = async () => {
+  const sendSupport = async (type: string = 'heart', message?: string) => {
     if (!profile?.relationshipId || !user) return;
     try {
       await updateDoc(doc(db, 'relationships', profile.relationshipId), {
         lastSupportAt: serverTimestamp(),
         lastSupportFrom: user.uid,
-        lastSupportType: 'heart'
+        lastSupportType: type,
+        lastSupportMessage: message || (type === 'heart' ? null : `sent you some ${type}`)
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'relationships/' + profile.relationshipId);
@@ -216,8 +217,29 @@ const Home = () => {
 
   const hasPartner = !!profile?.partnerId;
 
+  // Emotional Support Messaging & Role UI
+  const supportType = isFemale ? 'receiver' : 'sender';
+  
   return (
     <div className="max-w-lg mx-auto p-8 space-y-10 pb-32 relative">
+      {/* "Bone" Connection Visual / Synchronization Link */}
+      {hasPartner && (
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden opacity-10">
+          <svg className="w-full h-full" viewBox="0 0 400 800" xmlns="http://www.w3.org/2000/svg">
+            <path 
+              d="M200 50 Q 250 200 200 400 T 200 750" 
+              fill="none" 
+              stroke="#fb7185" 
+              strokeWidth="4" 
+              strokeDasharray="10 10"
+              className="animate-dash"
+            />
+            <circle cx="200" cy="50" r="10" fill="#fb7185" />
+            <circle cx="200" cy="750" r="10" fill="#fb7185" />
+          </svg>
+        </div>
+      )}
+
       <AnimatePresence>
         {showTour && <FeatureTour onComplete={completeTour} />}
         
@@ -253,6 +275,73 @@ const Home = () => {
           <img src={profile?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid}`} alt="avatar" />
         </div>
       </header>
+
+      {/* Role-Specific Support Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative z-10"
+      >
+        {isFemale ? (
+          <div className="bg-gradient-to-br from-rose-400 to-rose-500 p-8 rounded-[40px] text-white shadow-2xl shadow-rose-200 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <MessageCircleHeart size={24} />
+              </div>
+              <h3 className="font-black text-xl uppercase tracking-widest">Wellness Tip</h3>
+            </div>
+            <p className="text-lg font-medium leading-relaxed opacity-90">
+              {displaySettings.isPeriodActive 
+                ? "Your body is working hard. Dark chocolate and warm herbal teas can help ease discomfort today." 
+                : "You're in your high-energy phase. A great time for new ideas and creative projects!"}
+            </p>
+            {hasPartner && relationship?.lastSupportType === 'heart' && (
+              <div className="pt-4 border-t border-white/10 flex items-center gap-3">
+                <Heart size={16} fill="white" className="text-white animate-bounce" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Partner just sent you a heart</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white p-8 rounded-[40px] shadow-2xl shadow-rose-100 border border-rose-50 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center">
+                  <Heart size={24} />
+                </div>
+                <h3 className="font-black text-xl text-gray-800 uppercase tracking-widest">Support Her</h3>
+              </div>
+              <button 
+                onClick={sendSupport}
+                className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-400 active:scale-90 transition-all hover:bg-rose-100"
+              >
+                <Heart size={20} fill={relationship?.lastSupportAt ? "currentColor" : "none"} />
+              </button>
+            </div>
+            
+            <p className="text-gray-500 font-medium leading-relaxed italic">
+              {displaySettings.isPeriodActive 
+                ? "She's menstruating right now. Small gestures like a hot water bag or her favorite snack mean the world." 
+                : "She's feeling steady. A great time for a date or a long walk together."}
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => sendSupport('tea', 'sent you some warm tea 🍵')}
+                className="py-3 bg-rose-50 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all"
+              >
+                Warm Tea
+              </button>
+              <button 
+                onClick={() => sendSupport('chocolate', 'sent you some dark chocolate 🍫')}
+                className="py-3 bg-rose-50 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all"
+              >
+                Dark Choco
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
 
       {/* Connection Banner */}
       {hasPartner && (
@@ -330,28 +419,40 @@ const Home = () => {
             )}
 
             {displaySettings.isPeriodActive ? (
-              <div className="space-y-6 w-full">
-                <p className="text-gray-500 text-sm font-medium uppercase tracking-[0.2em]">{t('period_in_progress')}</p>
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="text-center">
-                    <p className="text-2xl font-black text-rose-500">{elapsed.d}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('days')}</p>
+              <div className="space-y-6 w-full relative">
+                <div className="absolute top-0 right-0 -mr-4 -mt-4">
+                  <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center animate-pulse">
+                     <Activity size={20} className="text-rose-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">{t('period_in_progress')}</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic opacity-70">
+                    Auto-saving to History...
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="text-center group">
+                    <p className="text-3xl font-black text-rose-500 transition-transform group-hover:scale-110">{elapsed.d}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('days')}</p>
                   </div>
                   <div className="text-center border-l border-gray-100">
-                    <p className="text-2xl font-black text-rose-500">{elapsed.h}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('hours')}</p>
+                    <p className="text-3xl font-black text-rose-500">{elapsed.h}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('hours')}</p>
                   </div>
                   <div className="text-center border-l border-gray-100">
-                    <p className="text-2xl font-black text-rose-500">{elapsed.m}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('mins')}</p>
+                    <p className="text-3xl font-black text-rose-500">{elapsed.m}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('mins')}</p>
                   </div>
                   <div className="text-center border-l border-gray-100">
-                    <p className="text-2xl font-black text-rose-500">{elapsed.s}</p>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('secs')}</p>
+                    <p className="text-3xl font-black text-rose-500">{elapsed.s}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('secs')}</p>
                   </div>
                 </div>
                 
-                <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                <div className="bg-rose-50/50 p-4 rounded-3xl border border-rose-100/50">
                   <p className="text-[10px] font-black text-rose-300 uppercase tracking-[0.2em] mb-1">Expected End Date</p>
                   <p className="text-sm font-bold text-rose-500">
                     {format(addDays(new Date(displaySettings.periodStartDate), (displaySettings.avgPeriodDays || 5) - 1), 'MMMM do, yyyy')}
@@ -360,7 +461,7 @@ const Home = () => {
 
                 <button
                   onClick={() => setIsStoppingPeriod(true)}
-                  className="mt-4 w-full py-5 bg-rose-400 text-white font-black rounded-3xl shadow-xl shadow-rose-200 flex items-center justify-center gap-2 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                  className="w-full py-5 bg-rose-400 text-white font-black rounded-3xl shadow-xl shadow-rose-200 flex items-center justify-center gap-3 active:scale-95 transition-all text-sm uppercase tracking-widest"
                 >
                   <Check size={20} strokeWidth={3} />
                   {t('stop_period')}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Bell, Lock, Moon, LogOut, ChevronRight, Globe, ShieldCheck, Heart, Info, XCircle, Instagram, Check, Monitor, Sun } from 'lucide-react';
+import { User, Bell, Lock, Moon, LogOut, ChevronRight, Globe, ShieldCheck, Heart, Info, XCircle, Instagram, Check, Monitor, Sun, Trash2, Link2Off } from 'lucide-react';
 import { logout, db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../lib/LanguageContext';
@@ -43,6 +43,59 @@ const Settings = () => {
     }
   };
 
+  const [showBreakModal, setShowBreakModal] = useState(false);
+  const [breakConfirmText, setBreakConfirmText] = useState('');
+
+  const handleBreakConnection = async () => {
+    if (!user || !profile?.relationshipId) {
+      alert("You are not currently connected to anyone.");
+      return;
+    }
+
+    if (breakConfirmText.toUpperCase() !== 'BREAK') {
+      alert("Please type 'BREAK' exactly to confirm.");
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const relId = profile.relationshipId;
+      const partnerId = profile.partnerId;
+
+      // 1. Update current user
+      await updateDoc(doc(db, 'users', user.uid), {
+        partnerId: null,
+        relationshipId: null,
+        updatedAt: serverTimestamp()
+      });
+
+      // 2. Update partner if exists (attempt) - they might have already disconnected
+      if (partnerId) {
+        try {
+          await updateDoc(doc(db, 'users', partnerId), {
+            partnerId: null,
+            relationshipId: null,
+            updatedAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.log("Partner already disconnected or inaccessible:", e);
+        }
+      }
+
+      // 3. Delete the relationship document to wipe history
+      await deleteDoc(doc(db, 'relationships', relId));
+      
+      alert("Connection broken successfully. You are now exploring solo.");
+      setShowBreakModal(false);
+      setBreakConfirmText('');
+      navigate('/');
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, 'relationships');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const sections = [
     {
       title: t('preferences'),
@@ -57,6 +110,17 @@ const Settings = () => {
       items: [
         { icon: Info, label: t('about_us'), sub: t('founder_sub'), onClick: () => setShowAbout(true) },
         { icon: ShieldCheck, label: t('partner_access'), sub: t('manage_synced'), onClick: () => navigate('/couple') },
+      ]
+    },
+    {
+      title: "Privacy & Security",
+      items: [
+        { 
+          icon: Link2Off, 
+          label: "Break Connection", 
+          sub: "Disconnect and hide shared history", 
+          onClick: () => setShowBreakModal(true) 
+        }
       ]
     }
   ];
@@ -204,6 +268,63 @@ const Settings = () => {
                 </div>
 
                 <p className="text-[10px] text-center opacity-40 uppercase tracking-[0.2em] pt-4">Designed with ❤️ for couples everywhere</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Break Connection Modal */}
+        {showBreakModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl space-y-6"
+            >
+              <div className="space-y-2 text-center">
+                <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Link2Off size={32} className="text-rose-400" />
+                </div>
+                <h3 className="text-xl font-black text-gray-800 uppercase tracking-widest">Sever Connection</h3>
+                <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                  This will "break the bone" and permanently wipe your shared history. 
+                  Future partners will not know about this connection.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Type "BREAK" to confirm</label>
+                <input 
+                  type="text"
+                  placeholder="BREAK"
+                  value={breakConfirmText}
+                  onChange={(e) => setBreakConfirmText(e.target.value)}
+                  className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold text-rose-500 placeholder:text-gray-200 border border-transparent focus:border-rose-100 outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowBreakModal(false);
+                    setBreakConfirmText('');
+                  }}
+                  className="flex-1 py-4 bg-gray-100 text-gray-500 font-black rounded-2xl text-xs uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBreakConnection}
+                  disabled={breakConfirmText.toUpperCase() !== 'BREAK' || updating}
+                  className={`flex-1 py-4 font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg transition-all ${
+                    breakConfirmText.toUpperCase() === 'BREAK' && !updating
+                      ? 'bg-rose-400 text-white shadow-rose-200'
+                      : 'bg-rose-100 text-rose-300 shadow-none grayscale opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  {updating ? 'Breaking...' : 'Break'}
+                </button>
               </div>
             </motion.div>
           </div>
