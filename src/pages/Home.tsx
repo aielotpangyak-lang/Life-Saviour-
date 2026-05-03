@@ -334,19 +334,19 @@ const Home = () => {
                 <p className="text-gray-500 text-sm font-medium uppercase tracking-[0.2em]">{t('period_in_progress')}</p>
                 <div className="grid grid-cols-4 gap-2">
                   <div className="text-center">
-                    <p className="text-2xl font-black text-gray-800">{elapsed.d}</p>
+                    <p className="text-2xl font-black text-rose-500">{elapsed.d}</p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('days')}</p>
                   </div>
                   <div className="text-center border-l border-gray-100">
-                    <p className="text-2xl font-black text-gray-800">{elapsed.h}</p>
+                    <p className="text-2xl font-black text-rose-500">{elapsed.h}</p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('hours')}</p>
                   </div>
                   <div className="text-center border-l border-gray-100">
-                    <p className="text-2xl font-black text-gray-800">{elapsed.m}</p>
+                    <p className="text-2xl font-black text-rose-500">{elapsed.m}</p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('mins')}</p>
                   </div>
                   <div className="text-center border-l border-gray-100">
-                    <p className="text-2xl font-black text-gray-800">{elapsed.s}</p>
+                    <p className="text-2xl font-black text-rose-500">{elapsed.s}</p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('secs')}</p>
                   </div>
                 </div>
@@ -364,6 +364,21 @@ const Home = () => {
                 >
                   <Check size={20} strokeWidth={3} />
                   {t('stop_period')}
+                </button>
+              </div>
+            ) : !hasData ? (
+              <div className="space-y-4 w-full">
+                <div className="space-y-1">
+                  <p className="text-gray-500 text-sm font-medium">{t('no_periods')}</p>
+                  <p className="text-xl font-medium text-gray-400 italic">Start your journey today</p>
+                </div>
+                
+                <button
+                  onClick={() => setIsLoggingPeriod(true)}
+                  className="mt-6 w-full py-5 bg-rose-400 text-white font-black rounded-3xl shadow-xl shadow-rose-200 flex items-center justify-center gap-3 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                >
+                  <Calendar size={20} />
+                  {t('log_period')}
                 </button>
               </div>
             ) : (
